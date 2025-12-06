@@ -4,22 +4,20 @@
 -- Schema Entities involved: Booking, User, Property, Payment
 
 -- ==============================================================================
--- 1. INITIAL COMPLEX QUERY (Potentially Inefficient)
--- Retrieves all bookings along with user details, property details, and payment details.
--- This uses four INNER JOINs, which can be resource-intensive if not well-indexed.
+-- 1. BASELINE PERFORMANCE TEST (Initial Complex Query)
+-- Instruction: Retrieve all bookings along with user details, property details, and payment details.
+-- This tests four necessary INNER JOINs without initial filtering.
 -- ==============================================================================
+
+-- Test Baseline Performance BEFORE Optimization:
+EXPLAIN ANALYZE
 SELECT
     b.booking_id,
     b.start_date,
-    b.end_date,
     b.total_price,
-    b.status AS booking_status,
     u.first_name AS guest_first_name,
-    u.last_name AS guest_last_name,
     p.name AS property_name,
-    p.location AS property_location,
-    pm.amount AS payment_amount,
-    pm.payment_method
+    pm.amount AS payment_amount
 FROM
     Booking AS b
 INNER JOIN
@@ -31,18 +29,19 @@ INNER JOIN
 ORDER BY
     b.start_date DESC;
 
+
 -- ==============================================================================
 -- 2. OPTIMIZED QUERY (Refactored for Efficiency)
--- Goal: Improve performance by reducing columns selected, checking WHERE clauses,
--- and ensuring joins use indexed FKs. In this case, the joins are all necessary
--- based on the requested output, so optimization focuses on SELECT efficiency
--- and using an explicit WHERE clause to filter common subsets (e.g., confirmed status).
+-- Goal: Improve performance by reducing columns and adding early filtering.
 -- ==============================================================================
+
+-- Test Optimized Performance AFTER Refactoring:
+EXPLAIN ANALYZE
 SELECT
     b.booking_id,
     b.start_date,
     b.total_price,
-    u.email, -- Changed from first/last name for faster lookup if email is primary join criteria
+    u.email, -- Selected email instead of first_name/last_name to reduce column overhead
     p.name AS property_name,
     pm.amount
 FROM
@@ -54,6 +53,6 @@ INNER JOIN
 INNER JOIN
     Payment AS pm ON b.booking_id = pm.booking_id
 WHERE
-    b.status = 'confirmed' -- Filter added to reduce dataset size and leverage the idx_booking_status index
+    b.status = 'confirmed' -- Added filter to reduce dataset size and leverage index
 ORDER BY
     b.start_date DESC;
