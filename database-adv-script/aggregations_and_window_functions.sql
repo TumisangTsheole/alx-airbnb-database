@@ -1,6 +1,6 @@
 -- 📊 SQL Aggregation and Window Functions for AirBnB Database
 
--- Objective: Analyze data using SQL aggregation (COUNT, GROUP BY) and window functions (RANK).
+-- Objective: Analyze data using SQL aggregation (COUNT, GROUP BY) and window functions (ROW_NUMBER, RANK, DENSE_RANK).
 -- Schema Entities: User, Property, Booking, Review
 
 -- 1. Aggregation Query: Total Bookings Per User
@@ -38,6 +38,8 @@ SELECT
     property_id,
     property_name,
     total_bookings,
+    -- ROW_NUMBER() assigns a unique, sequential number to each property (no ties possible)
+    ROW_NUMBER() OVER (ORDER BY total_bookings DESC, property_id) AS booking_row_number,
     -- RANK() assigns the same rank to properties with the same number of bookings (with gaps in the sequence)
     RANK() OVER (ORDER BY total_bookings DESC) AS booking_rank,
     -- DENSE_RANK() assigns the same rank without gaps
