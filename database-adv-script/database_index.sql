@@ -1,41 +1,66 @@
--- 🚀 Index Creation for Query Performance Improvement
+-- 🚀 Index Creation and Performance Test Examples
 
--- Objective: Create indexes on high-usage columns to speed up common queries (WHERE, JOIN, ORDER BY).
+-- Objective: Create indexes on high-usage columns and provide test cases for measuring performance.
+-- Note: Primary Keys (PKs) are automatically indexed.
+-- The following EXPLAIN ANALYZE commands are for testing performance BEFORE and AFTER index creation.
 
--- Based on the schema (User, Property, Booking, Review, Message) and common queries:
--- - Columns used in JOINs (Foreign Keys) are essential.
--- - Columns used in WHERE clauses (e.g., email, status) are essential.
--- - Columns used in ORDER BY or GROUP BY can benefit from indexing.
+-- ==============================================================================
+-- 1. PERFORMANCE BASELINE TEST (BEFORE INDEXES)
+-- Test Query: Find all properties for a specific host and sort them by price.
+-- This is a common lookup operation that should benefit greatly from indexing 'host_id'.
+-- ==============================================================================
+EXPLAIN ANALYZE
+SELECT
+    name,
+    pricepernight
+FROM
+    Property
+WHERE
+    host_id = 'uuid-002' -- Using Bob's ID from the seed script
+ORDER BY
+    pricepernight DESC;
 
--- Note: Primary Keys (PKs) are automatically indexed by the database.
+-- ==============================================================================
+-- 2. CREATE INDEXES
+-- ==============================================================================
 
--- 1. USER Table Indexes
--- The 'email' column is already unique and should have an index, often created implicitly with the UNIQUE constraint.
--- If the UNIQUE constraint did not create an index, this ensures it exists for fast logins/lookups.
+-- USER Table Indexes
+-- 'email' is often indexed for fast logins/lookups (assumed to be indexed by UNIQUE constraint).
 CREATE INDEX idx_user_email ON User(email);
 
-
--- 2. PROPERTY Table Indexes
--- 'host_id' is a Foreign Key and is heavily used in JOINs and lookups (e.g., "Show properties for this host").
+-- PROPERTY Table Indexes
+-- 'host_id' is a Foreign Key and is heavily used in JOINs and lookups.
 CREATE INDEX idx_property_host_fk ON Property(host_id);
 -- 'location' is often used in search/WHERE clauses.
 CREATE INDEX idx_property_location ON Property(location);
 
-
--- 3. BOOKING Table Indexes
--- 'property_id' and 'user_id' are crucial Foreign Keys, already indexed in the original schema but confirmed here.
+-- BOOKING Table Indexes
 -- 'status' is often used in WHERE clauses to filter bookings (e.g., confirmed, pending).
 CREATE INDEX idx_booking_status ON Booking(status);
--- Index on both user_id and start_date can speed up queries like "Find all future bookings for a user."
+-- Compound index for queries like "Find all future bookings for a user."
 CREATE INDEX idx_booking_user_start_date ON Booking(user_id, start_date);
 
-
--- 4. REVIEW Table Indexes
--- An index on property_id and rating can speed up queries that order or filter by rating for a specific property.
+-- REVIEW Table Indexes
+-- Index on property_id and rating for fast filtering/ordering of reviews.
 CREATE INDEX idx_review_property_rating ON Review(property_id, rating DESC);
 
-
--- 5. MESSAGE Table Indexes
+-- MESSAGE Table Indexes
 -- Indexing on both sender and recipient is crucial for fast message thread retrieval.
 CREATE INDEX idx_message_sender ON Message(sender_id);
 CREATE INDEX idx_message_recipient ON Message(recipient_id);
+
+
+-- ==============================================================================
+-- 3. PERFORMANCE TEST (AFTER INDEXES)
+-- Rerun the same test query to measure the performance improvement.
+-- ==============================================================================
+EXPLAIN ANALYZE
+SELECT
+    name,
+    pricepernight
+FROM
+    Property
+WHERE
+    host_id = 'uuid-002'
+ORDER BY
+    pricepernight DESC;
