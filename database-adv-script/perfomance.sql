@@ -6,10 +6,11 @@
 -- ==============================================================================
 -- 1. BASELINE PERFORMANCE TEST (Initial Complex Query)
 -- Instruction: Retrieve all bookings along with user details, property details, and payment details.
--- This tests four necessary INNER JOINs without initial filtering.
+-- This joins four tables without initial filtering.
 -- ==============================================================================
 
 -- Test Baseline Performance BEFORE Optimization:
+-- Note: Use EXPLAIN ANALYZE (PostgreSQL) or EXPLAIN (MySQL) as appropriate for your database.
 EXPLAIN ANALYZE
 SELECT
     b.booking_id,
@@ -41,7 +42,7 @@ SELECT
     b.booking_id,
     b.start_date,
     b.total_price,
-    u.email, -- Selected email instead of first_name/last_name to reduce column overhead
+    u.email,
     p.name AS property_name,
     pm.amount
 FROM
